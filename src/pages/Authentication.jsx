@@ -1,7 +1,9 @@
 import PropTypes from 'prop-types'
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { validateEmail, validatePassword } from '../utilities/validation'
 import { Link } from 'react-router-dom'
+import { registerApi } from '../apis/Authentication'
 
 const intitalErrorsState = {
   email: '',
@@ -10,6 +12,7 @@ const intitalErrorsState = {
 }
 
 const Authentication = ({pageType}) => {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors ] = useState('')
@@ -21,25 +24,57 @@ const Authentication = ({pageType}) => {
     setPassword(e.target.value)
   }
   const handleSubmit = async (e) => {
+    e.preventDefault();
 
+    let newErrors = {}
     if(!validateEmail(email)){
-
-      setErrors(
-        {
-          ...errors,
-          email: 'Please enter a valid email address'
-        }
-      )
+      newErrors = {
+        ...newErrors,
+        email: 'Please enter a valid email address'
+      }
     }
 
     if(!validatePassword(password)){
+      newErrors = {
+        ...newErrors,
+        password: 'Password must be at least 6 characters long'
+      }
+    }
+ 
+    setErrors(newErrors)
 
-      setErrors(
-        {
-          ...errors,
-          password: 'Password must be at least 6 characters long'
+    if (pageType === PageType.LOGIN){
+      const [result, error] = await loginApi({
+        user: {
+          email: email,
+          password: password
         }
-      )
+      })
+      handleResponse(result, error)
+    }
+    else {
+      const [result, error] = await registerApi({
+        user: {
+          email: email,
+          password: password
+        }
+      })
+      handleResponse([result, error])
+    }
+  }
+
+  const handleResponse = ([result, error]) => {
+    if(error){
+      setErrors({
+        ...errors,
+        api: error
+      })
+    }
+    else{
+      const message = result.message
+      const user = result.data
+
+      navigate('/')
     }
   }
 
